@@ -7,6 +7,54 @@ datasource db {
 }
 
 model App {
-    id   Int    @id @default(autoincrement())
-    name String
+    id        Int      @id @default(autoincrement())
+    name      String
+    apiKey    String   @unique
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    events     Event[]
+    sessions   Session[]
+    crashes    Crash[]
+    dailyStats DailyStats[]
+}
+
+model Event {
+    id        Int      @id @default(autoincrement())
+    appId     Int
+    name      String
+    data      Json
+    timestamp DateTime @default(now())
+
+    app App @relation(fields: [appId], references: [id], onDelete: Cascade)
+}
+
+model Session {
+    id        Int      @id @default(autoincrement())
+    appId     Int
+    userId    String
+    startTime DateTime @default(now())
+    endTime   DateTime
+    duration  Int
+
+    app App @relation(fields: [appId], references: [id], onDelete: Cascade)
+}
+
+model Crash {
+    id     Int    @id @default(autoincrement())
+    appId  Int
+    userId String
+    app    App    @relation(fields: [appId], references: [id], onDelete: Cascade)
+}
+
+model DailyStats {
+    id           Int      @id @default(autoincrement())
+    appId        Int
+    date         DateTime
+    eventCount   Int      @default(0)
+    sessionCount Int      @default(0)
+
+    app App @relation(fields: [appId], references: [id], onDelete: Cascade)
+
+    @@unique([appId, date])
 }
