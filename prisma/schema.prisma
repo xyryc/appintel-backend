@@ -26,7 +26,11 @@ model Event {
     data      Json
     timestamp DateTime @default(now())
 
+    // relation
     app App @relation(fields: [appId], references: [id], onDelete: Cascade)
+
+    // index for high-volume queries (filter by app + name + time range)
+    @@index([appId, name, timestamp])
 }
 
 model Session {
