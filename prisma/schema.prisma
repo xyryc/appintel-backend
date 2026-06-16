@@ -17,6 +17,8 @@ model App {
     sessions   Session[]
     crashes    Crash[]
     dailyStats DailyStats[]
+    user       User?        @relation(fields: [userId], references: [id])
+    userId     Int?
 }
 
 model Event {
@@ -33,22 +35,36 @@ model Event {
     @@index([appId, name, timestamp])
 }
 
-model Session {
+model User {
     id        Int      @id @default(autoincrement())
+    email     String   @unique
+    name      String?
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    apps App[]
+}
+
+model Session {
+    id        Int       @id @default(autoincrement())
     appId     Int
     userId    String
-    startTime DateTime @default(now())
-    endTime   DateTime
-    duration  Int
+    startTime DateTime  @default(now())
+    endTime   DateTime?
+    duration  Int?
 
     app App @relation(fields: [appId], references: [id], onDelete: Cascade)
 }
 
 model Crash {
-    id     Int    @id @default(autoincrement())
-    appId  Int
-    userId String
-    app    App    @relation(fields: [appId], references: [id], onDelete: Cascade)
+    id        Int      @id @default(autoincrement())
+    appId     Int
+    userId    String
+    error     String
+    stack     String
+    timestamp DateTime @default(now())
+
+    app App @relation(fields: [appId], references: [id], onDelete: Cascade)
 }
 
 model DailyStats {
