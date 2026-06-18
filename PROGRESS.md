@@ -5,7 +5,7 @@
 | Phase | Goal                                                                         | Status                                                                    | Techs introduced                                                                                                                                                                | Rough % learned                                               |
 | ----- | ---------------------------------------------------------------------------- | ------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
 | 1     | Scaffold NestJS app, configure Prisma 7, Zod env, Docker‑free dev setup      | ✅ Completed (code boots, Swagger works)                                  | NestJS 10, TypeScript strict, Prisma 7 (adapter‑pg), Zod, Neon PostgreSQL, Upstash Redis, .env, Swagger, ESLint                                                                 | 100 % of listed techs                                         |
-| 2     | Build analytics core – Prisma models, ingestion API, logging, testing        | 🔧 In progress (Event model, `/ingest/event` endpoint, logger middleware) | Prisma schema design (relations, indexes), JSON fields, Zod validation (advanced), NestJS Controllers + Modules, middleware, Postman/Bruno testing, Prisma Studio, Swagger tags | ≈45 % (core API works, logging & full schema still to finish) |
+| 2     | Build analytics core – Prisma models, ingestion API, logging, testing        | 🔧 In progress (Event model, `/ingest/event` endpoint, logger middleware, GET endpoints pending) | Prisma schema design (relations, indexes), JSON fields, Zod validation (advanced), NestJS Controllers + Modules, middleware, Postman/Bruno testing, Prisma Studio, Swagger tags | ≈55 % (core API works, logging complete, query endpoints pending) |
 | 3     | Query layer – get events, sessions, daily stats, pagination                  | ⏳ Not started                                                            | Prisma query API, DTOs, pagination helpers, `@Query` decorators, response shaping                                                                                               | 0 %                                                           |
 | 4     | Auth & rate‑limiting – JWT guard, API‑key validation, per‑app quotas         | ⏳ Not started                                                            | `@nestjs/passport`, `passport-jwt`, custom guards, `@nestjs/throttler`                                                                                                          | 0 %                                                           |
 | 5     | Real‑time & WebSocket support – live dashboards                              | ⏳ Not started                                                            | `@nestjs/websockets`, socket.io, Redis Pub/Sub                                                                                                                                  | 0 %                                                           |
@@ -17,15 +17,15 @@
 
 | Technology              | Phase 1 (baseline)                    | Phase 2 (so far)                                 | Overall % |
 | ----------------------- | ------------------------------------- | ------------------------------------------------ | --------- |
-| NestJS                  | 100 % – scaffold, modules, DI         | 100 % – controller, middleware                   | 100 %     |
-| Prisma 7                | 55 % – config, adapter‑pg, basic CRUD | 35 % – Event model, ingestion endpoint           | 45 %      |
-| PostgreSQL (Neon)       | 100 % – connection, migrations        | 85 % – event table live                          | 92 %      |
+| NestJS                  | 100 % – scaffold, modules, DI         | 100 % – controller, middleware, logger           | 100 %     |
+| Prisma 7                | 55 % – config, adapter‑pg, basic CRUD | 55 % – Event model, ingestion, full schema       | 55 %      |
+| PostgreSQL (Neon)       | 100 % – connection, migrations        | 90 % – event table live, all models            | 95 %      |
 | Redis (Upstash)         | 20 % – env var only                   | 20 % – still unused                              | 20 %      |
-| Zod                     | 70 % – env validation, request schema | 80 % – advanced validation, custom error mapping | 75 %      |
-| Swagger/OpenAPI         | 80 % – basic docs                     | 85 % – endpoint tag added                        | 82 %      |
-| Testing (Postman/Bruno) | 30 % – manual curl                    | 50 % – using Postman & console logs              | 40 %      |
-| Logging                 | 40 % – `console.log`                  | 80 % – middleware prints full request            | 60 %      |
+| Zod                     | 70 % – env validation, request schema | 90 % – advanced validation, custom error mapping | 80 %      |
+| Swagger/OpenAPI         | 80 % – basic docs                     | 90 % – endpoint tags, full API docs            | 85 %      |
+| Testing (Postman/Bruno) | 30 % – manual curl                    | 60 % – using Postman & console logs              | 45 %      |
+| Logging                 | 40 % – `console.log`                  | 100 % – middleware prints full request           | 80 %      |
 | Docker / CI‑CD          | 0 %                                   | 0 %                                              | 0 %       |
 | Observability           | 0 %                                   | 0 %                                              | 0 %       |
 
-**Overall project completion ≈ 55 %** (Phase 1 + partial Phase 2).
+**Overall project completion ≈ 65 %** (Phase 1 + majority Phase 2).

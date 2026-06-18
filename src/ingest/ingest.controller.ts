@@ -1,12 +1,25 @@
 import {
   Body,
   Controller,
+  Get,
   HttpException,
   HttpStatus,
   Post,
+  Query,
 } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
 import z, { ZodError } from 'zod';
+
+interface EventsQuery {
+  apiKey?: string;
+  appName?: string;
+  eventName?: string;
+  startDate?: string;
+  endDate?: string;
+  page?: string;
+  pageSize?: string;
+}
 
 const ingestSchema = z.object({
   apiKey: z.string(),
@@ -46,5 +59,66 @@ export class IngestController {
     });
 
     return { status: 'ok' };
+  }
+
+  @Get('events')
+  async getEvents(@Query() q: EventsQuery) {
+    const {
+      apiKey,
+      appName,
+      eventName,
+      startDate,
+      endDate,
+      page = '1',
+      pageSize = '20',
+    } = q;
+    const pageNum = parseInt(page, 10);
+    const pageSizeNum = parseInt(pageSize, 10);
+
+    const where: Prisma.EventWhereInput = {};
+    if (apiKey) {
+      const app = await this.prisma.app.findUnique({ where: { apiKey } });
+      if (!app) throw new HttpException('App not found', HttpStatus.NOT_FOUND);
+      where.appId = app.id;
+    }
+
+    if (appName) {
+      const app = await this.prisma.app.findFirst({
+        where: { name: { contains: appName } },
+      });
+      if (!app) throw new HttpException('App not found', HttpStatus.NOT_FOUND);
+      where.appId = app.id;
+    }
+
+    if (eventName) {
+      where.name = eventName;
+    }
+
+    if (startDate || endDate) {
+      where.timestamp = {};
+      if (startDate) {
+        where.timestamp.gte = new Date(startDate);
+      }
+      if (endDate) {
+        where.timestamp.lte = new Date(endDate);
+      }
+    }
+
+    const total = await this.prisma.event.count({ where });
+    const events = await this.prisma.event.findMany({
+      where,
+      skip: (pageNum - 1) * pageSizeNum,
+      take: pageSizeNum,
+      orderBy: { timestamp: 'desc' },
+    });
+
+    return {
+      data: events,
+      pagination: {
+        total,
+        page: pageSizeNum,
+        totalPages: Math.ceil(total / pageSizeNum),
+      },
+    };
   }
 }
