@@ -123,7 +123,7 @@ export class IngestController {
       data: events,
       pagination: {
         total,
-        page: pageSizeNum,
+        page: pageNum,
         totalPages: Math.ceil(total / pageSizeNum),
       },
     };
@@ -133,37 +133,110 @@ export class IngestController {
   async dailyStats(@Query() q: DailyStatsQuery) {
     const { apiKey, appName, startDate, endDate } = q;
 
-    const where: Prisma.DailyStatsWhereInput = {};
+    // 1) First, figure out which app we are filtering by.
+    //    We only need the app id because Event rows store appId.
+    let appId: number | undefined;
 
+    // If user passed apiKey, find the matching App row.
     if (apiKey) {
       const app = await this.prisma.app.findUnique({ where: { apiKey } });
       if (!app) throw new HttpException('App not found', HttpStatus.NOT_FOUND);
-      where.appId = app.id;
+      appId = app.id;
     }
 
+    // If user passed appName, find a matching App row by name.
     if (appName) {
       const app = await this.prisma.app.findFirst({
         where: { name: { contains: appName } },
       });
       if (!app) throw new HttpException('App not found', HttpStatus.NOT_FOUND);
-      where.appId = app.id;
+      appId = app.id;
     }
 
+    // 2) Build a filter for the Event table.
+    //    We are NOT reading DailyStats here.
+    //    We are calculating stats from Event rows.
+    const where: Prisma.EventWhereInput = {};
+
+    // If we found an app, only count that app's events.
+    if (appId) {
+      where.appId = appId;
+    }
+
+    // If the user passed dates, filter events by timestamp.
     if (startDate || endDate) {
-      where.date = {};
+      where.timestamp = {};
       if (startDate) {
-        where.date.gte = new Date(startDate);
+        where.timestamp.gte = new Date(startDate);
       }
       if (endDate) {
-        where.date.lte = new Date(endDate);
+        where.timestamp.lte = new Date(endDate);
       }
     }
 
-    const stats = await this.prisma.dailyStats.findMany({
+    // 3) Fetch only the fields we need from Event.
+    //    We don't need the full Event object.
+    const events = await this.prisma.event.findMany({
       where,
-      orderBy: { date: 'desc' },
+      select: {
+        timestamp: true,
+        data: true,
+      },
     });
 
+    // 4) Group events by day.
+    //    Example result shape:
+    //    {
+    //      "2026-06-19": {
+    //        date: "2026-06-19",
+    //        eventCount: 3,
+    //        sessionCount: 2
+    //      }
+    //    }
+    const grouped: Record<
+      string,
+      { date: string; eventCount: number; sessionCount: number }
+    > = {};
+
+    for (const event of events) {
+      // Convert event timestamp into YYYY-MM-DD.
+      // Example: 2026-06-19T10:12:20.829Z -> 2026-06-19
+      const day = event.timestamp.toISOString().split('T')[0];
+
+      // Create the bucket if this day doesn't exist yet.
+      if (!grouped[day]) {
+        grouped[day] = {
+          date: day,
+          eventCount: 0,
+          sessionCount: 0,
+        };
+      }
+
+      // Every fetched row is an event, so increment event count.
+      grouped[day].eventCount += 1;
+
+      // 5) Count a "session" if the event data looks like a session event.
+      //    We don't have a separate Session table populated yet.
+      //    So we infer sessionCount from event payload fields.
+      const eventData = event.data as Record<string, unknown>;
+
+      if (eventData && typeof eventData === 'object') {
+        // If payload has session or duration, treat it as session-related.
+        if (
+          eventData.session !== undefined ||
+          eventData.duration !== undefined
+        ) {
+          grouped[day].sessionCount += 1;
+        }
+      }
+    }
+
+    // 6) Convert grouped object to array and sort newest first.
+    const stats = Object.values(grouped).sort((a, b) =>
+      b.date.localeCompare(a.date),
+    );
+
+    // 7) Return aggregated daily stats.
     return { stats };
   }
 }
